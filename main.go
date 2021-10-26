@@ -1,19 +1,18 @@
 package main
 
-import "net/http"
-
-type fooHandler struct {
-	Message string
-}
-
-func (f *fooHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(f.Message))
-}
+import (
+	"log"
+	"net/http"
+)
 
 func main() {
-	http.Handle("/foo", &fooHandler{
-		Message: "Hello World",
-	})
+	foo := func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("hello world"))
+	}
 
+	http.HandleFunc("/foo", foo)
 
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		log.Fatal(err)
+	}
 }
