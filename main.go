@@ -2,11 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Product struct {
@@ -129,6 +131,15 @@ func getNextId() int {
 	return highestId + 1
 }
 
+func middlewareHandler(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("before handler; middleware start")
+		start := time.Now()
+		handler.ServeHTTP(w, r)
+		fmt.Printf("middleware finished; %s", time.Since(start))
+	})
+}
+
 func init() {
 	productsJson := `[
 		{
@@ -147,8 +158,11 @@ func init() {
 }
 
 func main() {
-	http.HandleFunc("/products", productsHandler)
-	http.HandleFunc("/products/", productHandler)
+	productsHandlerFunc := http.HandlerFunc(productsHandler)
+	productHandlerFunc := http.HandlerFunc(productHandler)
+
+	http.Handle("/products", middlewareHandler(productsHandlerFunc))
+	http.Handle("/products/", middlewareHandler(productHandlerFunc))
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal(err)
